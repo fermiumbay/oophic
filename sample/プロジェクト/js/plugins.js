@@ -7,9 +7,8 @@ var $plugins =
 {"name":"SkipTitle","status":true,"description":"タイトルをスキップする","parameters":{}},
 {"name":"PictureMotion","status":true,"description":"ピクチャモーションプラグイン\n任意のパターンでピクチャの移動を行います。","parameters":{}},
 {"name":"CustomizeConfigDefault","status":true,"description":"オプションデフォルト値設定プラグイン","parameters":{"AlwaysDash":"false","CommandRemember":"false","TouchUi":"true","BgmVolume":"100","BgsVolume":"100","MeVolume":"100","SeVolume":"100","EraseAlwaysDash":"true","EraseCommandRemember":"true","EraseTouchUi":"true","EraseBgmVolume":"false","EraseBgsVolume":"true","EraseMeVolume":"true","EraseSeVolume":"false"}},
-{"name":"ClassManager","status":true,"description":"クラス管理をするマネージャー","parameters":{}},
 {"name":"PictureManager","status":true,"description":"ピクチャ管理を行うPictureManagerクラスを提供します。","parameters":{"every_cycle_refresh_flg":"false"}},
 {"name":"DTextPicture_mod","status":true,"description":"動的文字列ピクチャ生成プラグイン","parameters":{"frameWindowSkin":"","frameWindowPadding":"18","padCharacter":"0","prefixText":"","widthVariable":"0","heightVariable":"0"}},
-{"name":"ClassManager3","status":true,"description":"クラス管理をするマネージャー3（これを汎用プラグインにしたい）","parameters":{}},
+{"name":"ClassManager","status":true,"description":"クラス管理をするマネージャー3（これを汎用プラグインにしたい）","parameters":{}},
 {"name":"UTA_CommonSaveMZ","status":true,"description":"セーブデータ間で共有のセーブデータを作成し、\n指定したスイッチ・変数の状態をセーブデータ間で共有します。","parameters":{"targetSwitches":"[\"20\"]","targetVariables":"[\"61-96\"]","applyOnLoad":"false","applyOnSave":"false","applyOnNewGame":"false","applyOnAutoSave":"false","applyOnGameover":"false","saveFileName":"uta_common"}}
 ];
