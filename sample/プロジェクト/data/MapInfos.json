@@ -1,6 +1,6 @@
 [
 null,
-{"id":1,"expanded":true,"name":"エントリーポイント","order":1,"parentId":0,"scrollX":532,"scrollY":301},
+{"id":1,"expanded":true,"name":"エントリーポイント","order":1,"parentId":0,"scrollX":446.5,"scrollY":323},
 {"id":2,"expanded":true,"name":"ベイ助のご利益羽根つき","order":4,"parentId":14,"scrollX":0,"scrollY":0},
 {"id":3,"expanded":false,"name":"ベイ助の雪だるまづくり","order":5,"parentId":14,"scrollX":0,"scrollY":0},
 {"id":4,"expanded":false,"name":"ベイ助のいちご狩り歩き","order":6,"parentId":14,"scrollX":0,"scrollY":0},
@@ -13,11 +13,11 @@ null,
 {"id":11,"expanded":false,"name":"ベイ助の学芸会準備","order":13,"parentId":14,"scrollX":532,"scrollY":302},
 {"id":12,"expanded":false,"name":"ベイ助のやきいもキャンプ","order":14,"parentId":14,"scrollX":532,"scrollY":302},
 {"id":13,"expanded":true,"name":"ベイ助の星空滑空","order":15,"parentId":14,"scrollX":532,"scrollY":302},
-{"id":14,"expanded":true,"name":"ゲーム集","order":3,"parentId":0,"scrollX":532,"scrollY":301},
-{"id":15,"expanded":false,"name":"ゲームの共通処理","order":16,"parentId":0,"scrollX":532,"scrollY":301},
-{"id":16,"expanded":true,"name":"util","order":17,"parentId":15,"scrollX":0,"scrollY":0},
+{"id":14,"expanded":true,"name":"ゲーム集","order":3,"parentId":0,"scrollX":446.5,"scrollY":301},
+{"id":15,"expanded":true,"name":"ゲームの共通処理","order":16,"parentId":0,"scrollX":532,"scrollY":301},
+{"id":16,"expanded":true,"name":"util","order":17,"parentId":15,"scrollX":490,"scrollY":300},
 null,
 null,
 {"id":19,"expanded":false,"name":"図形","order":18,"parentId":15,"scrollX":0,"scrollY":0},
-{"id":20,"expanded":false,"name":"タイトル画面","order":2,"parentId":0,"scrollX":532,"scrollY":301}
+{"id":20,"expanded":false,"name":"タイトル画面","order":2,"parentId":0,"scrollX":446.5,"scrollY":331}
 ]

@@ -1,9 +1,35 @@
 /*:ja
  * @target MZ
- * @plugindesc クラス管理をするマネージャー3（これを汎用プラグインにしたい）
+ * @plugindesc ピクチャ指向プログラミング管理プラグイン ver0.01
  * @author フェルミウム湾
  *
- * @help ClassManager.js
+ * @help ピクチャ指向プログラミングによるツール開発を行うための機能をサポートします。
+ * ピクチャ指向プログラミングは、ピクチャを主体としたイベント「クラス」を用いて
+ * クラスのつなぎ合わせによってシステムを構築するものです。
+ * このプラグインを使用するには、予めタイルセット「クラス図」を導入ください。
+ * 
+ * クラスの作成方法は、以下のブログを参考願います。
+ * https://fermiumbay13.hatenablog.com/
+ * 
+ * 作成したクラスは、スクリプトコマンドにて、以下を入力することで使用できます。
+ * 
+ * let popManager = new PopManager(); // インスタンス生成
+ * popManager.registClasses(10, []); // マップ10番ロード
+ * popManager.run(); // プログラム実行
+ * 
+ * PopManagerのインスタンスは、registClasses関数でロードし、
+ * run関数でロードしたプログラムをすべて実行します。
+ * 上記は、マップ10番のクラスをロードし、それを実行する例です。
+ * 
+ * registClasses関数は、ロードしたマップが「クラス図」であることを前提として、
+ * マップ全体をトレースし、図からJavaScriptのソースコードに変換します。
+ * 変換されたソースコードは、PopManagerのインスタンスが
+ * script変数にて文字列として保持します。
+ * run関数は、script変数の内容をevalでそのまま実行するだけです。
+ * 
+ * なお、本プラグインではプラグインコマンドとして
+ * ピクチャの初期化処理を使用可能です。
+ * クラスのコンストラクタに挿入して使用ください。
  * 
  * @command initialize
  * @text 初期化
@@ -95,7 +121,7 @@
  * 
  * @arg pictureManager
  * @type string
- * @default pictureManager
+ * @default global.mainLayer
  * @text this.pictureManager
  * @desc ピクチャ管理オブジェクトを指定します。
  * 
@@ -136,26 +162,14 @@ var ClassDef = function() {
 	this.accessLevel = 0;
 };
 
-ClassManager = function() {
+PopManager = function() {
 	// 生成したJavaScriptコード
 	this.script = "";
 	eval("global = new function(){};\n");	// グローバル変数を初期化する
 	eval("classInitializer = new function(){};\n");	// クラス初期化用の構造体を初期化する
 };
 
-/*// 初期化処理を生成する
-ClassManager.prototype.createInit = function() {
-	var initStr = "";
-	this.script += initStr + "\n";
-};*/
-
-ClassManager.prototype.run = function() {
-	//eval("var global = new function(){};\n");	// グローバル変数を初期化する
-	//eval("var classInitializer = new function(){};\n");	// クラス初期化用の構造体を初期化する
-//	eval("global = new function(){};\n");	// グローバル変数を初期化する
-//	eval("classInitializer = new function(){};\n");	// クラス初期化用の構造体を初期化する
-	console.log("<<script>>");
-	console.log(this.script);
+PopManager.prototype.run = function() {
 	eval(this.script);
 };
 
@@ -275,7 +289,6 @@ var createClassMap = function(mapObj, mapName) {
 	}
 	
 	mapObj.events.forEach(event => {
-		//**/console.log(event);
 		// イベントのクラス定義オブジェクトを生成しておく
 		var obj = splitPackageClass(mapName, normalizeClassName(event.name));
 		if (!(obj[0] in this.classList)) this.classList[obj[0]] = [];
@@ -365,17 +378,14 @@ var createClassMap = function(mapObj, mapName) {
 					case 1:
 						classList[obj[0]][obj[1]].prevAggregation.push([baseObj[0], baseObj[1]]);
 						classList[baseObj[0]][baseObj[1]].nextAggregation.push([obj[0], obj[1]]);
-						//console.log("集約:" + baseEventName + "=>" + eventName);
 						break;
 					case 2:
 						classList[obj[0]][obj[1]].prevInheritance.push([baseObj[0], baseObj[1]]);
 						classList[baseObj[0]][baseObj[1]].nextInheritance.push([obj[0], obj[1]]);
-						//console.log("汎化:" + baseEventName + "=>" + eventName);
 						break;
 					case 3:
 						classList[obj[0]][obj[1]].prevExecute.push([baseObj[0], baseObj[1]]);
 						classList[baseObj[0]][baseObj[1]].nextExecute.push([obj[0], obj[1]]);
-						//console.log("実行:" + baseEventName + "=>" + eventName);
 						break;
 				}
 			}
@@ -413,8 +423,6 @@ var createClassMap = function(mapObj, mapName) {
 		if (chip[x][y].allowTurn || dict == 2 || dict == 8) {
 			chip[x][y].searchedUpDownFlg = true;
 		}
-
-		//console.log("探索(" + x + ", " + y + ")");
 
 		// 全方向に再び探索する
 		if (chip[x][y].allowTurn || dict == 4 || dict == 6) {
@@ -469,19 +477,7 @@ var createClassMap = function(mapObj, mapName) {
 
 	// TODO: ここまでで接続情報がそろったが、正しい接続かどうかはエラーチェックが必要
 
-	/*
-	this.classList[mapName] = [];
-	this.classList[mapName]["キャラクター管理"] = new ClassDef();
-	this.classList[mapName]["キャラクター管理"].prevAggregation.push([mapName, "キャラクター基底"]);
-	this.classList[mapName]["キャラクター基底"] = new ClassDef();
-	this.classList[mapName]["キャラクター基底"].nextAggregation.push([mapName, "キャラクター管理"]);
-	this.classList[mapName]["キャラクター基底"].prevInheritance.push([mapName, "かぶるくん"]);
-	this.classList[mapName]["かぶるくん"] = new ClassDef();
-	this.classList[mapName]["かぶるくん"].nextInheritance.push([mapName, "キャラクター基底"]);
-	*/
 };
-
-var init_func_name = "初期化";
 
 var update_func_name = "更新";
 
@@ -491,20 +487,8 @@ var release_func_name = "解放";	// TODO: この関数は、本プログラム�
 
 var global_prefix_name = "global.";
 
-/*
-ClassManager.prototype.run = function() {
-	//registClasses($gameMap._mapId);
-
-	//registClasses(1, []);
-
-	//registClasses(10, []);	// サンプル
-	//registClasses(12, []);	// TODO: 別マップに子クラスだけあると、その子クラスからのsuperで無限ループになってしまう
-	//registClasses(11, []);
-//	registClasses(14, []);
-};*/
-
 // 指定したマップIDのクラスをすべて登録する（別マップのクラスも再帰的にロードする）　第二引数は、ロード済みマップ名（空からスタート）
-ClassManager.prototype.registClasses = function(mapId, loadedMapNameList)  {
+PopManager.prototype.registClasses = function(mapId, loadedMapNameList)  {
 
 	var loadMapInfo = loadMapClasses(mapId);
 
@@ -525,60 +509,12 @@ ClassManager.prototype.registClasses = function(mapId, loadedMapNameList)  {
 	}
 		
 	// ロードが必要なマップの分をすべてevalしてから、元のマップの分をevalする
-	//eval(loadMapInfo[0]);
 	this.script += loadMapInfo[0] + "\n";
 
 	// そのマップ全体のクラスの初期化関数をここで呼んでおく
 	var callInitStr = "";
 	callInitStr += "classInitializer.initMap" + mapId + "();\n";
-	//eval(callInitStr);
 	this.script += callInitStr + "\n";
-
-
-
-	/*
-	var aaa = loadMapClasses(mapId);
-	var bbb = loadMapClasses(11);
-	eval(bbb[0]);
-	eval(aaa[0]);
-
-	console.log(" * aaa * ");
-	console.log(aaa);
-	console.log(" * bbb * ");
-	console.log(bbb);
-
-	// TODO: ロードする必要があると判明したマップ名一覧を戻り値で取得しておく
-	requiredMapNameList = ["ベイ助サンプル", "わわわ", "画像のテスト用"];
-
-	console.log("---------------------------------------------");
-	var loadMapIdList = [];
-	for (var i = 0; i < $dataMapInfos.length; i++) {
-		if ($dataMapInfos[i] != null && requiredMapNameList.includes($dataMapInfos[i].name)) {
-			// TODO: ここで、this.loadMapClasses(i) を再帰的に呼び出し、requiredMapNameListが空になるまで続ける（一度取得したマップ名は記憶しておき、重複があればエラーとする）
-			console.log($dataMapInfos[i].name);
-		}
-	}
-	console.log("---------------------------------------------");
-*/
-
-//	$dataMapInfos[mapId].name;
-
-	/*
-	// TODO: クラス名について検討が必要なところあり
-	別マップにあるクラス名をどう表現するかを決めるべき
-	今は global_クラス名 で一概に表現しているが、そうしてしまうと
-	マップ1でもマップ2でもクラス名がAAAであった場合に、どちらもglobal_AAAになってしまう
-	マップ名.クラス名とすればよいかとも思われるが、そもそもマップ名自体重複が許されているので、マップ名だけでは重複してしまう
-	import文のようなものを用意すれば解決できそうだが、どんどんプログラム寄りになってしまうので、出来ればそうはしたくない
-	別マップのクラスをextern宣言するにはどうするのがやりやすいか考えること
-
-	マップ名を重複させられるのはやむを得ないとして、そんな使い方をしなければいいように思われる
-	global_マップ名_クラス名 にするか、マップツリーをフォルダ構造に見立てて
-	global_マップ名_マップ名_マップ名_クラス名 のようにするかして、マップ名の情報を名前に含める
-	別マップのクラスを呼び出すときは、イベント名を「マップ名.クラス名」のようにする（さらに入れ子にして「マップ名.マップ名.クラス名」でもいいかもしれない）
-	ただし、呼び出し時はマップ名を都度指定するのが面倒なので、「クラス名」だけで呼べるようにする（複数マップで同一クラス名のものは使用できない制約にする）
-	*/
-
 };
 
 // クラス名の正規化（先頭に★が付いていたら削除する）
@@ -603,36 +539,12 @@ var splitPackageClass = function(mapName, eventName) {
 	return obj;
 };
 
-/*// クラスの親子関係を走査して、親クラスの方が小さい番号になるようclassOrderListに各クラスの番号を付与していく
-var calcClassOrder = function(classList, className, classOrderList, checkedClassNameList, order) {
-	if (checkedClassNameList.includes(className)) {
-		return;
-	}
-	checkedClassNameList.push(className);
-	//classOrderList[className] = order;
-	classOrderList.push({name: className, order: order});
-
-	let superClassName = "";
-	if (classList[className].nextInheritance.length >= 1) {
-		superClassName = classList[className].nextInheritance[0][1];
-		calcClassOrder(classList, superClassName, classOrderList, checkedClassNameList, order - 1);
-	}
-
-	let childClassName = "";
-	for (let i = 0; i < classList[className].prevInheritance.length; i++) {
-		childClassName = classList[className].prevInheritance[i][1];
-		calcClassOrder(classList, childClassName, classOrderList, checkedClassNameList, order + 1);
-	}
-
-};*/
-
 // クラスの親子関係を走査して、親クラスの方が小さい番号になるようclassOrderListに各クラスの番号を付与していく
 var calcClassOrder = function(classList, packageName, className, classOrderList, checkedClassNameList, order) {
 	if (checkedClassNameList.includes(packageName + "." + className)) {
 		return;
 	}
 	checkedClassNameList.push(packageName + "." + className);
-	//classOrderList[className] = order;
 	classOrderList.push({packageName: packageName, className: className, order: order});
 
 	let superClassName = "";
@@ -648,7 +560,6 @@ var calcClassOrder = function(classList, packageName, className, classOrderList,
 		childClassName = classList[packageName][className].prevInheritance[i][1];
 		calcClassOrder(classList, childPackageName, childClassName, classOrderList, checkedClassNameList, order + 1);
 	}
-
 };
 
 // マップオブジェクトのロード
@@ -669,30 +580,16 @@ var loadMapClasses = function(mapId) {
 	var mapObj = loadMapObj(mapId);
 	mapObj.events = mapObj.events.filter(event => !!event);	// null要素を削除しておく
 
-	// マップ名/イベント名の対でリスト保持する
-	//this.classList = [];
-
 	this.classList = [];
 
 	// イベント一覧の取得
 	var map = $dataMapInfos[mapId];
-	//console.log("マップ名:" + map.name);
 
-	// TODO: この段階で、イベント名の関係をすべて取得しておく
 	createClassMap(mapObj, map.name);
-
-	// クラス名リスト
-	var classNameList = [];
-
-	// クラス名に対するアクセスレベルのリスト(0:private, 1:public)
-	var accessLevelList = [];
 
 	// 他マップのクラス一覧
 	var externMapList = [];
-	mapObj.events.forEach(event => {	// TODO: ここのループでは解析だけ行って、スクリプトは生成しない！！！　解析した結果のオブジェクトを使ってスクリプトを生成することにする（解析した結果は中間言語になる）そのために、まずは下記からスクリプト生成しているところを全部消して、オブジェクト生成の処理に書き換えていけばいい
-
-		//console.log(" イベント名:" + event.name);
-
+	mapObj.events.forEach(event => {
 		// クラス名
 		var className = event.name;
 		var accessLevelValue;
@@ -711,11 +608,7 @@ var loadMapClasses = function(mapId) {
 		// 別マップのクラス
 		if (packageName !== map.name) {
 			requiredMapNameSet.add(packageName);
-			//funcStrList.push("var " + className + " = " + global_prefix_name + className + ";\n");
-			/*********************************/
 			externMapList.push(packageName);
-			/*********************************/
-//			funcList.push(funcName);
 		}
 
 		// クラス定義オブジェクト
@@ -728,7 +621,6 @@ var loadMapClasses = function(mapId) {
 		classObj.funcList = [];
 
 		event.pages.forEach(page => {
-//			var funcStr = "";
 
 			// 関数の定義を追加
 			var funcObj = new FuncDef();
@@ -738,7 +630,6 @@ var loadMapClasses = function(mapId) {
 
 			page.list.forEach(command => {
 				// 注釈(一行だけ取り出して関数名と引数名を取得する)
-				// TODO: 複数行もそのうちサポートした方がいい
 				if (command.code === 108) {
 					// スペースを無視して、"関数名(引数1,引数2,…)"の文法と解釈して分解する
 					var noteStr = command.parameters[0];
@@ -758,7 +649,7 @@ var loadMapClasses = function(mapId) {
 				
 				if (command.code === 357) {
 					// プラグインコマンドの取得
-					if (command.parameters[0] === "ClassManager" && command.parameters[1] === "initialize") {
+					if (command.parameters[0] === "PopManager" && command.parameters[1] === "initialize") {
 						var obj = command.parameters[3];
 						funcObj.script += "this.angle = " + obj.angle + ";\n";
 						funcObj.script += "this.blendMode = " + obj.blendMode + ";\n";
@@ -790,21 +681,13 @@ var loadMapClasses = function(mapId) {
 
 	});
 
-	// TODO: ここまででクラス定義クラスは全部そろっているはずなので、確認する　それをもとに実際のスクリプトを生成していく
-	console.log(this.classList);
-	//a();/**/
-
 	// クラスを、親クラス順に並べ替える（親クラスから先に定義しないと、子クラスの定義でオーバーライドが出来ないため）
 	let checkedClassNameList = [];
 	let classOrderList = [];
 	for (packageName in this.classList) {
 		// パッケージごと
-		console.log("***" + packageName);
-
 		for (className in this.classList[packageName]) {
 			// クラスごと
-			console.log("///" + className);
-
 			if (!checkedClassNameList.includes(packageName + "." + className)) {
 				calcClassOrder(this.classList, packageName, className, classOrderList, checkedClassNameList, 0);
 			}
@@ -817,33 +700,16 @@ var loadMapClasses = function(mapId) {
 	});
 	classOrderList.forEach(obj => {
 		// これでnewClassListには順番にthis.classList[obj.packageName][obj.className]を代入できていることに注意
-		console.log(this.classList[obj.packageName][obj.className]);
 		if (!(obj.packageName in newClassList)) {
 			newClassList[obj.packageName] = [];
 		}
 		newClassList[obj.packageName][obj.className] = this.classList[obj.packageName][obj.className];
 	});
 	this.classList = newClassList;
-	console.log(this.classList);
-
-	//a();/**/
-
-	// TODO: ★[4/25]更新・描画の処理の追加実装できたので、次は外部クラスの実装考えてみたい（どうあるべきかをまず考えて、↓特化処理に入れるべきかどうかで判断すること）
-	// TODO: ★[4/26]外部クラスの実装 簡単な関数はできたはずだが、外部クラスのロードをしないといけないので、一旦外部クラスのロードをどうしたらいいか考える（その前にpublic/private実装する必要あるか？）　その後、外部クラスで色々試してみる（コンストラクタ・デストラクタがあったり継承があったりした場合どうか考える）
-	// TODO: ★[4/27]public/privateの実装はできたはず 次は外部クラスのロードとかの外回りを考えてみる
-	// TODO: ★[5/8]だいぶ出来てきた 残件はおそらく右記→「外部クラスに★を先頭に付けた場合」「外部クラスを継承した場合」「外部クラスの集約はどうあるべきか」これが出来たらもうリファクタリングはいいと思う
-	// TODO: ★[5/9]外部クラスの継承は、「.」のものはうまくいくが、別マップの継承がうまくいかない　これはそもそも、親クラスを後のイベント番号にすると子クラスの継承で親クラスが見つからない、という不具合があり、それに関連する可能性があるので、まずはそれを修正してから考える　それが完了したら、あとは「外部クラスに★を先頭に付けた場合」を確認して、問題なければ完了
-	// TODO: ★[5/10]外部クラスの継承は、「.」のものはうまくいくが、別マップの継承がうまくいかない件を修正する　それが完了したら、あとは「外部クラスに★を先頭に付けた場合」を確認して、問題なければ完了
-	// TODO: ★[5/14]完了 あとはソースコード綺麗にするだけでいいと思う ただそれまでのミニゲームがうまく動いていないところがあるので、そこは従来コードと比較して確認すること
-	// TODO: ★[5/15]雪だるままでは確認完了 次いちご狩り：草の「更新」を通ってなさそう　お花見：桜が進行しない
-	// TODO: ★[5/22]羽根つきの、あと何秒でスタートが速すぎる たぶん継承してthis.t++が二重になってるのではと思うが、どこで二重になっているのかよくわからない ログを挿入して追ってみること
-	// TODO: ★[5/24]星空滑空で、試しに外部クラスのprivateクラスをutil.XXXで書き換えられるようにしたはずだが、点数達成エフェクトが上書きされない 原因確認すること
-	// TODO: ★[5/29]点数達成エフェクトの上書きはたぶんできたので、メモ帳に記録しているタスクを達成していくこと
 
 	// 処理追加の特化処理（コンストラクタ・デストラクタ・初期化・更新・描画・解放関数を追加・修正する）うまくいけば、この後のJavaScript構文作成の処理は分岐なしでスクリプト生成するだけになるかもしれない
 	for (packageName in this.classList) {
 		// パッケージごと
-		console.log("***" + packageName);
 
 		// 外部クラスフラグ
 		let externFlg = false;
@@ -853,13 +719,11 @@ var loadMapClasses = function(mapId) {
 
 		for (className in this.classList[packageName]) {
 			// クラスごと
-			console.log("///" + className);
 
 			// 継承元クラス（無ければ空文字列）
 			let superClassName = "";
 			if (this.classList[packageName][className].nextInheritance.length >= 1) {
 				superClassName = this.classList[packageName][className].nextInheritance[0][1];
-				console.log(superClassName);
 			}
 			
 			// 通常クラスの場合は特化処理として関数を追加する
@@ -874,32 +738,16 @@ var loadMapClasses = function(mapId) {
 						this.classList[packageName][className].funcs.push(funcObj);
 					}
 				});
-
-				// 初期化関数が無い場合は追加して、コンストラクタの内容をそのまま初期化関数に移動する（コンストラクタは空になる）
-/*				if (this.classList[packageName][className].funcs.filter(func => func.name === init_func_name).length == 0) {
-					let constructor = this.classList[packageName][className].funcs.filter(func => func.name === "")[0];
-					let funcObj = new FuncDef();
-					funcObj.name = init_func_name;
-					funcObj.args = constructor.args;
-					funcObj.script = constructor.script;
-					constructor.script = "this." + init_func_name + "(" + funcObj.args + ")" + ";\n";
-					this.classList[packageName][className].funcs.push(funcObj);
-				}*/
 			}
 			
 			this.classList[packageName][className].funcs.forEach(func => {
 				// 関数ごと
-				console.log(packageName + "/" + className + "/" + func.name);
 
 				let header = "";
 				let footer = "";
 
 				if (externFlg) {
 					// 外部クラスの場合
-
-/*					if (func.name === "" || func.name === "~") {
-						throw new Error("外部クラスにコンストラクタ・デストラクタは設定できません。");
-					}*/
 
 					// 親クラスがあるかどうかでsuperの意味が変わる
 					// TODO: ↓これはコンストラクタやデストラクタでは使用できないので、コンストラクタやデストラクタで使用できるsuperも定義必要か
@@ -912,22 +760,18 @@ var loadMapClasses = function(mapId) {
 					}
 
 					
-					/*************************************************************************/
-					// TODO: ↓このifのかたまりは、「通常クラスの場合」のものをそのままコピペしてきただけなので、本当に良いのか吟味すること　たぶん本来はすべてのクラスが更新や描画を持った親クラスを継承して作られるべき
 					let allUpdateFlg = false;
 					if (func.name === "") {
-						//footer += "this." + init_func_name + "(" + func.args + ")" + ";\n";
-/*					}
-					else if (func.name === init_func_name) {*/
 						// 親クラスがある場合はthis.superで呼び出せるようにする
 						if (superClassName !== "") {
-							//header += "this.super = function() { return " + superClassName + ".prototype." + init_func_name + ".apply(this, arguments); };\n";
 							header += "this.super = function() { return " + superClassName + ".prototype.constructor.apply(this, arguments); };\n";
 						}
 
 						header += "this.cleared = false;\n";	// 自身が消去されたフラグ
 						header += "this.list = [];\n";	// 自身が集約するオブジェクト
 						header += "this.t = 0;\n";	// 現在時刻をリセットする
+						header += "(function() {\n";
+						footer += "}).apply(this);\n";
 						footer += "if (this.filename !== undefined && this.filename != null) {\n";
 						footer += "this.picture = this.pictureManager.create(this.filename, this.origin, this.x, this.y, this.scaleX, this.scaleY, this.opacity, this.blendMode);\n";
 						footer += "this.picture.setDivNum(this.divX, this.divY);\n";
@@ -942,95 +786,100 @@ var loadMapClasses = function(mapId) {
 						}
 					}
 					else if (func.name === update_func_name) {
-												if (superClassName !== "") {
-													header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
+						if (superClassName !== "") {
+							header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
 						}
+
+						// allUpdateFlgがある関数は、内部で return true; とすると後の更新処理を行わないようにできるため、if文つきの匿名関数で囲う
+						header += "if (!(function() {\n";
+						footer += "}).apply(this)) {\n";
+
 						if (superClassName !== "" && func.script === "") {
 							footer += "this.super();\n";	// TODO: これは応急処置に近い 本来であれば、すべてのクラスは更新や描画を持った親クラスを継承して作られるべき
 						} else {
-													// TODO: 本来はこれが正しいと思うのだが、ベイ助のゲームは誤った実装になっていないか？(継承関係のあるクラスそれぞれがt++してないか？)確認すること
-													// TODO: 試しに常にthis.t++;するようにしてみた 考えてみたら、super呼ばない限りはthis.t++が重複することは無いのだ super呼ぶときがややこしそう super呼ぶときに限り親クラス側でthis.t++;しないように出来ないものか
-													footer += "this.t++;\n";
+							footer += "this.t++;\n";
 						}
-												allUpdateFlg = true;
-											}
-											else if (func.name === draw_func_name) {
-						/***************************/ if (func.script === "") {
-												// 親クラスがある場合はthis.superで呼び出せるようにする
-												if (superClassName !== "") {
-													header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
-												}
-						
-												header += "if (this.picture !== undefined && this.picture != null) {\n";
-												header += "this.picture._targetX = this.x;\n";
-												header += "this.picture._targetY = this.y;\n";
-												header += "this.picture._targetScaleX = this.scaleX;\n";
-												header += "this.picture._targetScaleY = this.scaleY;\n";
-												header += "this.picture._targetOpacity = this.opacity;\n";
-												header += "this.picture._angle = this.angle;\n";
-												header += "this.picture._blendMode = this.blendMode;\n";
-												header += "this.picture.tint(this.color, 1);\n";
-												header += "this.picture.widthId = this.cellX;\n";
-												header += "this.picture.heightId = this.cellY;\n";
-												header += "this.pictureManager.draw(this.picture);\n";	// TODO: pictureManagerの扱いはどうする？ 集約している元クラスが持って、集約される側は持たないものか？
-												header += "}\n";
-						
-						/***************************/ }
-												allUpdateFlg = true;
-											}
-											else if (func.name === release_func_name) {
-						/***************************/ if (func.script === "") {
-												// 親クラスがある場合はthis.superで呼び出せるようにする
-												if (superClassName !== "") {
-													header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
-												}
-						
-												header += "if (this.picture !== undefined && this.picture != null) {\n";
-												header += "this.pictureManager.delete(this.picture);\n";	// TODO: pictureManagerの扱いはどうする？ 集約している元クラスが持って、集約される側は持たないものか？
-												header += "this.picture = null;\n";
-												header += "}\n";
-						
-						/***************************/ }
-												allUpdateFlg = true;
-											}
-											else {
-												// 普通の関数の場合
-						
-												// 親クラスがある場合はthis.superで呼び出せるようにする
-												if (superClassName !== "") {
-													header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
-												}
-						
-											}
+						allUpdateFlg = true;
+					}
+					else if (func.name === draw_func_name) {
+						if (func.script === "") {
+							// 親クラスがある場合はthis.superで呼び出せるようにする
+							if (superClassName !== "") {
+								header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
+							}
+							
+							header += "if (this.picture !== undefined && this.picture != null) {\n";
+							header += "this.picture._targetX = this.x;\n";
+							header += "this.picture._targetY = this.y;\n";
+							header += "this.picture._targetScaleX = this.scaleX;\n";
+							header += "this.picture._targetScaleY = this.scaleY;\n";
+							header += "this.picture._targetOpacity = this.opacity;\n";
+							header += "this.picture._angle = this.angle;\n";
+							header += "this.picture._blendMode = this.blendMode;\n";
+							header += "this.picture.tint(this.color, 1);\n";
+							header += "this.picture.widthId = this.cellX;\n";
+							header += "this.picture.heightId = this.cellY;\n";
+							header += "this.pictureManager.draw(this.picture);\n";	// TODO: pictureManagerの扱いはどうする？ 集約している元クラスが持って、集約される側は持たないものか？
+							header += "}\n";
+						}
 
-											
+						// allUpdateFlgがある関数は、内部で return true; とすると後の更新処理を行わないようにできるため、if文つきの匿名関数で囲う
+						header += "if (!(function() {\n";
+						footer += "}).apply(this)) {\n";
+						allUpdateFlg = true;
+					}
+					else if (func.name === release_func_name) {
+						if (func.script === "") {
+							// 親クラスがある場合はthis.superで呼び出せるようにする
+							if (superClassName !== "") {
+								header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
+							}
+						
+							header += "if (this.picture !== undefined && this.picture != null) {\n";
+							header += "this.pictureManager.delete(this.picture);\n";	// TODO: pictureManagerの扱いはどうする？ 集約している元クラスが持って、集約される側は持たないものか？
+							header += "this.picture = null;\n";
+							header += "}\n";			
+						}
+
+						// allUpdateFlgがある関数は、内部で return true; とすると後の更新処理を行わないようにできるため、if文つきの匿名関数で囲う
+						header += "if (!(function() {\n";
+						footer += "}).apply(this)) {\n";	
+						allUpdateFlg = true;
+					}
+					else {
+					// 普通の関数の場合
+						
+						// 親クラスがある場合はthis.superで呼び出せるようにする
+						if (superClassName !== "") {
+							header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
+						}
+						
+					}
 
 					// 集約関係にあるオブジェクトをすべて更新する
 					if (allUpdateFlg) {
-						//**/if (func.name !== "" && func.name !== "~") {
-												// TODO: クラス図で集約関係にあるもののみを、この関数の最後に全実行する（現状はlistにあるものをすべて呼んでいる）
-												// listにあるオブジェクトのうち、集約関係にあるもののみを全実行する
-												footer += "this.list.forEach(obj => {\n";
-												footer += "if (obj." + func.name + " !== undefined) {\n";
-												footer += "obj." + func.name + "(" + func.args + ");\n";
-												footer += "}\n";
-												footer += "});\n";
-						//**/if (func.name === update_func_name) {
-												// clearedが立っているものはthis.listから除外し、解放関数を呼ぶ
-												footer += "this.list.forEach(obj => {\n";
-												footer += "if (obj.cleared && obj." + release_func_name + " !== undefined) {\n";
-												footer += "obj." + release_func_name + "();\n";
-												footer += "}\n";
-												footer += "});\n";
+						// TODO: クラス図で集約関係にあるもののみを、この関数の最後に全実行する（現状はlistにあるものをすべて呼んでいる）
+						// listにあるオブジェクトのうち、集約関係にあるもののみを全実行する
+						footer += "this.list.forEach(obj => {\n";
+						footer += "if (obj." + func.name + " !== undefined) {\n";
+						footer += "obj." + func.name + "(" + func.args + ");\n";
+						footer += "}\n";
+						footer += "});\n";
+				
+						// clearedが立っているものはthis.listから除外し、解放関数を呼ぶ
+						footer += "this.list.forEach(obj => {\n";
+						footer += "if (obj.cleared && obj." + release_func_name + " !== undefined) {\n";
+						footer += "obj." + release_func_name + "();\n";
+						footer += "}\n";
+						footer += "});\n";
 						
-												// clearedが立っているオブジェクトを除外する
-												footer += "this.list = this.list.filter(obj => {\n";
-												footer += "return !obj.cleared;\n";
-												footer += "});\n";
-						//**/}}
-											}
-					// TODO: ↑このifのかたまりは、「通常クラスの場合」のものをそのままコピペしてきただけなので、本当に良いのか吟味すること　たぶん本来はすべてのクラスが更新や描画を持った親クラスを継承して作られるべき
-					/*************************************************************************/
+						// clearedが立っているオブジェクトを除外する
+						footer += "this.list = this.list.filter(obj => {\n";
+						footer += "return !obj.cleared;\n";
+						footer += "});\n";
+						
+						footer += "}\n";
+					}
 
 				} else {
 					// 通常クラスの場合
@@ -1038,18 +887,16 @@ var loadMapClasses = function(mapId) {
 
 					// コンストラクタの場合
 					if (func.name === "") {
-						//footer += "this." + init_func_name + "(" + func.args + ")" + ";\n";
-/*					}
-					else if (func.name === init_func_name) {*/
 						// 親クラスがある場合はthis.superで呼び出せるようにする
 						if (superClassName !== "") {
-							//header += "this.super = function() { return " + superClassName + ".prototype." + init_func_name + ".apply(this, arguments); };\n";
 							header += "this.super = function() { return " + superClassName + ".prototype.constructor.apply(this, arguments); };\n";
 						}
 
 						header += "this.cleared = false;\n";	// 自身が消去されたフラグ
 						header += "this.list = [];\n";	// 自身が集約するオブジェクト
 						header += "this.t = 0;\n";	// 現在時刻をリセットする
+						header += "(function() {\n";
+						footer += "}).apply(this);\n";
 						footer += "if (this.filename !== undefined && this.filename != null) {\n";
 						footer += "this.picture = this.pictureManager.create(this.filename, this.origin, this.x, this.y, this.scaleX, this.scaleY, this.opacity, this.blendMode);\n";
 						footer += "this.picture.setDivNum(this.divX, this.divY);\n";
@@ -1064,61 +911,66 @@ var loadMapClasses = function(mapId) {
 						}
 					}
 					else if (func.name === update_func_name) {
-//***************************/ if (func.script === "") {
 						// 親クラスがある場合はthis.superで呼び出せるようにする
 						if (superClassName !== "") {
 							header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
-/**/}
-//**/						} else {
-							// 親クラスが無い場合は現在時刻を増加する
-if (superClassName !== "" && func.script === "") {
-	footer += "this.super();\n";	// TODO: これは応急処置に近い 本来であれば、すべてのクラスは更新や描画を持った親クラスを継承して作られるべき
-} else {
-							// TODO: 本来はこれが正しいと思うのだが、ベイ助のゲームは誤った実装になっていないか？(継承関係のあるクラスそれぞれがt++してないか？)確認すること
-							// TODO: 試しに常にthis.t++;するようにしてみた 考えてみたら、super呼ばない限りはthis.t++が重複することは無いのだ super呼ぶときがややこしそう super呼ぶときに限り親クラス側でthis.t++;しないように出来ないものか
+						}
+
+						// allUpdateFlgがある関数は、内部で return true; とすると後の更新処理を行わないようにできるため、if文つきの匿名関数で囲う
+						header += "if (!(function() {\n";
+						footer += "}).apply(this)) {\n";
+
+						// 親クラスが無い場合は現在時刻を増加する
+						if (superClassName !== "" && func.script === "") {
+							footer += "this.super();\n";
+						} else {
 							footer += "this.t++;\n";
-}
-//**/						}
-//***************************/ }
+						}
 						allUpdateFlg = true;
 					}
 					else if (func.name === draw_func_name) {
-/***************************/ if (func.script === "") {
-						// 親クラスがある場合はthis.superで呼び出せるようにする
-						if (superClassName !== "") {
-							header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
+						if (func.script === "") {
+							// 親クラスがある場合はthis.superで呼び出せるようにする
+							if (superClassName !== "") {
+								header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
+							}
+
+							header += "if (this.picture !== undefined && this.picture != null) {\n";
+							header += "this.picture._targetX = this.x;\n";
+							header += "this.picture._targetY = this.y;\n";
+							header += "this.picture._targetScaleX = this.scaleX;\n";
+							header += "this.picture._targetScaleY = this.scaleY;\n";
+							header += "this.picture._targetOpacity = this.opacity;\n";
+							header += "this.picture._angle = this.angle;\n";
+							header += "this.picture._blendMode = this.blendMode;\n";
+							header += "this.picture.tint(this.color, 1);\n";
+							header += "this.picture.widthId = this.cellX;\n";
+							header += "this.picture.heightId = this.cellY;\n";
+							header += "this.pictureManager.draw(this.picture);\n";	// TODO: pictureManagerの扱いはどうする？ 集約している元クラスが持って、集約される側は持たないものか？
+							header += "}\n";
 						}
 
-						header += "if (this.picture !== undefined && this.picture != null) {\n";
-						header += "this.picture._targetX = this.x;\n";
-						header += "this.picture._targetY = this.y;\n";
-						header += "this.picture._targetScaleX = this.scaleX;\n";
-						header += "this.picture._targetScaleY = this.scaleY;\n";
-						header += "this.picture._targetOpacity = this.opacity;\n";
-						header += "this.picture._angle = this.angle;\n";
-						header += "this.picture._blendMode = this.blendMode;\n";
-						header += "this.picture.tint(this.color, 1);\n";
-						header += "this.picture.widthId = this.cellX;\n";
-						header += "this.picture.heightId = this.cellY;\n";
-						header += "this.pictureManager.draw(this.picture);\n";	// TODO: pictureManagerの扱いはどうする？ 集約している元クラスが持って、集約される側は持たないものか？
-						header += "}\n";
-
-/***************************/ }
+						// allUpdateFlgがある関数は、内部で return true; とすると後の更新処理を行わないようにできるため、if文つきの匿名関数で囲う
+						header += "if (!(function() {\n";
+						footer += "}).apply(this)) {\n";
 						allUpdateFlg = true;
 					}
 					else if (func.name === release_func_name) {
-/***************************/ if (func.script === "") {
-						// 親クラスがある場合はthis.superで呼び出せるようにする
-						if (superClassName !== "") {
-							header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
+						if (func.script === "") {
+							// 親クラスがある場合はthis.superで呼び出せるようにする
+							if (superClassName !== "") {
+								header += "this.super = function() { return " + superClassName + ".prototype." + func.name + ".apply(this, arguments); };\n";
+							}
+
+							header += "if (this.picture !== undefined && this.picture != null) {\n";
+							header += "this.pictureManager.delete(this.picture);\n";	// TODO: pictureManagerの扱いはどうする？ 集約している元クラスが持って、集約される側は持たないものか？
+							header += "this.picture = null;\n";
+							header += "}\n";
 						}
 
-						header += "if (this.picture !== undefined && this.picture != null) {\n";
-						header += "this.pictureManager.delete(this.picture);\n";	// TODO: pictureManagerの扱いはどうする？ 集約している元クラスが持って、集約される側は持たないものか？
-						header += "this.picture = null;\n";
-						header += "}\n";
-
-/***************************/ }
+						// allUpdateFlgがある関数は、内部で return true; とすると後の更新処理を行わないようにできるため、if文つきの匿名関数で囲う
+						header += "if (!(function() {\n";
+						footer += "}).apply(this)) {\n";
 						allUpdateFlg = true;
 					}
 					else {
@@ -1133,7 +985,6 @@ if (superClassName !== "" && func.script === "") {
 
 					// 集約関係にあるオブジェクトをすべて更新する
 					if (allUpdateFlg) {
-//**/if (func.name !== "" && func.name !== "~") {
 						// TODO: クラス図で集約関係にあるもののみを、この関数の最後に全実行する（現状はlistにあるものをすべて呼んでいる）
 						// listにあるオブジェクトのうち、集約関係にあるもののみを全実行する
 						footer += "this.list.forEach(obj => {\n";
@@ -1141,7 +992,7 @@ if (superClassName !== "" && func.script === "") {
 						footer += "obj." + func.name + "(" + func.args + ");\n";
 						footer += "}\n";
 						footer += "});\n";
-//**/if (func.name === update_func_name) {
+
 						// clearedが立っているものはthis.listから除外し、解放関数を呼ぶ
 						footer += "this.list.forEach(obj => {\n";
 						footer += "if (obj.cleared && obj." + release_func_name + " !== undefined) {\n";
@@ -1153,29 +1004,18 @@ if (superClassName !== "" && func.script === "") {
 						footer += "this.list = this.list.filter(obj => {\n";
 						footer += "return !obj.cleared;\n";
 						footer += "});\n";
-//**/}}
+						
+						footer += "}\n";
 					}
-
 				}
 
 				// スクリプトの前後にヘッダ文字列とフッタ文字列を追加する
 				func.script = header + func.script + footer;
 			});
-
 		}
 	}
 
 	// ここからJavaScriptの構文を作っていく
-
-	// TODO: まずすべてのクラスに描画・更新の処理を追加する　またlistにある処理を全実行する処理も追加する　コンストラクタにも処理追加必要かも　追加が終わった後に、JavaScriptへ変換していく
-	// TODO: 他マップのクラスはこの前にロードが必要になるが、まずはここでの生成はマップ単位に限定して、そのあとでどの順番にevalするかというのを決める
-	
-	// TODO: 種類ごとに生成するスクリプトを分ける
-	// クラスがpublic/private
-	// クラスが普通のクラス/外部クラス
-	// [OK]クラスが継承元を持っている/持っていない
-	// [OK]関数がコンストラクタ/デストラクタ/その他の関数
-	// ↑上記全パターンを書き下してみて、どう条件分岐を実装すればいいか考えればよい
 
 	// クラスのスクリプト
 	var classFuncStr = "";
@@ -1183,12 +1023,8 @@ if (superClassName !== "" && func.script === "") {
 	// 外部クラスのスクリプト
 	var externClassFuncStr = "";
 
-	// TODO: classFuncStrを使わずに全部externClassFuncStrにしたら正常動作する？（そうすると全部initMapでロードすることになるので確かに筋は通る）それならexternClassFuncStrだけで済むよう以下見直すこと
-
-	//this.classList.forEach((package) => {
 	for (packageName in this.classList) {
 		// パッケージごと
-		console.log("***" + packageName);
 
 		// 外部クラスフラグ
 		let externFlg = false;
@@ -1199,16 +1035,13 @@ if (superClassName !== "" && func.script === "") {
 		// クラスのスクリプト
 		var funcStr = "";
 
-		//package.forEach((classObj) => {
 		for (className in this.classList[packageName]) {
 			// クラスごと
-			console.log("///" + className);
 
 			// 継承元クラス（無ければ空文字列）
 			let superClassName = "";
 			if (this.classList[packageName][className].nextInheritance.length >= 1) {
 				superClassName = this.classList[packageName][className].nextInheritance[0][1];
-				console.log(superClassName);
 			}
 
 			// privateの場合はvar宣言しておく
@@ -1216,22 +1049,15 @@ if (superClassName !== "" && func.script === "") {
 				if (externFlg) {
 					if (packageName !== "") {
 						// パッケージ名が空の場合は外部システムで定義されたクラスと認識する 空でない場合は他マップに存在すると仮定してglobalのものと関連付ける
-						//funcStr += "if (typeof global." + className + " === 'function') var " + className + " = global." + className + ";\n";
 						funcStr += "var " + className + " = " + global_prefix_name + packageName + "." + className + ";\n";
 					}
 				} else {
 					funcStr += "var " + className + ";\n";
 				}
-				/***********************************
-				if (externFlg) {
-					classFuncStr += className + " = util.ゲーム進行管理;\n";
-				}
-				/***********************************/
 			}
 	
 			this.classList[packageName][className].funcs.forEach(func => {
 				// 関数ごと
-				console.log(packageName + "/" + className + "/" + func.name);
 
 				// nullの関数は生成しない
 				if (func.name === null) {
@@ -1252,7 +1078,6 @@ if (superClassName !== "" && func.script === "") {
 					}
 					funcStr += classPrefix + className + " = function(" + func.args + ") {\n";
 					
-					//funcStr += "this." + init_func_name + "(" + func.args + ")" + ";\n";
 					funcStr += func.script + "\n";
 					funcStr += "};\n";
 
@@ -1266,26 +1091,6 @@ if (superClassName !== "" && func.script === "") {
 						funcStr += classPrefix + className + ".prototype.constructor = " + classPrefix + className + ";\n";
 					}
 				}
-/*				else if (func.name === init_func_name) {
-
-					// 外部クラスの場合はオーバーライド元を変数に控えておく
-					if (externFlg) {
-						funcStr += "let " + className + "_prototype_" + func.name + " = " + className + ".prototype." + func.name + ";\n"
-					}
-
-					// 初期化関数の定義
-					funcStr += classPrefix + className + ".prototype." + func.name + " = function(" + func.args + ") {\n";
-
-//					classFuncStr += "this.cleared = false;\n";	// 自身が消去されたフラグ
-//					classFuncStr += "this.list = [];\n";	// 自身が集約するオブジェクト
-//					classFuncStr += "this.t = 0;\n";	// 現在時刻をリセットする
-					funcStr += func.script + "\n";
-//					classFuncStr += "if (this.filename !== undefined && this.filename != null) {\n";
-//					classFuncStr += "this.picture = this.pictureManager.create(this.filename, this.origin, this.x, this.y, this.scaleX, this.scaleY, this.opacity, this.blendMode);\n";
-//					classFuncStr += "this.picture.setDivNum(this.divX, this.divY);\n";
-					//classFuncStr += "}\n";
-					funcStr += "};\n";
-				}*/
 				else if (func.name === "~") {
 					// デストラクタの場合
 					funcStr += classPrefix + className + ".prototype.destructor" + " = function(" + func.args + ") {\n";
@@ -1304,10 +1109,6 @@ if (superClassName !== "" && func.script === "") {
 					funcStr += func.script;
 					funcStr += "};\n";
 				}
-
-				
-
-
 			});
 
 			if (this.classList[packageName][className].accessLevel == 0) {
@@ -1319,57 +1120,14 @@ if (superClassName !== "" && func.script === "") {
 				}
 			}
 	
-		//});
 		}
 
-		// クラスのスクリプトに、内部or外部で分岐して書き込む
-		/*************************************************
-		if (externFlg) {
-			externClassFuncStr += funcStr;
-		} else {
-			classFuncStr += funcStr;
-		}
-		/*************************************************/
 		externClassFuncStr += funcStr;
-		/*************************************************/
 
-	//});
 	}
-
-	// 自分自身のマップではすべてのクラスに参照できるよう、globalを除いたクラス名でvar宣言しておく
-	// TODO: もうこれ要らないのでは？ 意味なくなってる
-	/*for (packageName in this.classList) {
-		for (className in this.classList[packageName]) {
-			if (this.classList[packageName][className].accessLevel === 1) {
-				// publicの場合
-				classFuncStr += "var " + this.classList[packageName][className].name + " = " + global_prefix_name + this.classList[packageName][className].name + ";\n"
-			}
-		}
-	}*/
-	/*
-	classNameList.forEach(obj => {
-		if (accessLevelList[obj] === 1) {
-			// publicの場合
-			classFuncStr += "var " + obj + " = " + global_prefix_name + obj + ";\n"
-		}
-	});
-	*/
-
-	// 別マップにあるクラスの参照を初期化関数で行うように設定する
-	// TODO: もうこれ要らないのでは？ 意味なくなってる
-	/*externMapList.forEach(obj => {
-		if (obj !== "") {
-			classFuncStr += "var " + obj + ";\n";
-		}
-	});*/
 
 	// クラス初期化関数の定義
 	classFuncStr += "classInitializer.initMap" + mapId + " = function() {\n";
-/*	externMapList.forEach(obj => {
-		if (obj !== "") {
-			classFuncStr += obj + " = " + global_prefix_name + obj + ";\n";
-		}
-	});*/
 
 	// 外部クラスの関数定義
 	classFuncStr += externClassFuncStr;
@@ -1386,78 +1144,7 @@ if (superClassName !== "" && func.script === "") {
 	classFuncStr += "};\n";
 
 	// 外側にスコープ用のfunctionを追加
-	//classFuncStr = "(function() {\n" + classFuncStr + "}());\n";
 	classFuncStr = "global." + map.name + " = new (function() {\n" + classFuncStr + "})();\n";
-
-	// クラス初期化関数の呼び出し
-	// TODO: ★これはここじゃなくて、外側でやるのかも？？？？
-	//classFuncStr += "classInitializer.initMap" + mapId + "();\n";
-
-	console.log(classFuncStr);
-	//b();/**/
 
 	return [classFuncStr, Array.from(requiredMapNameSet)];
 };
-
-//-------------------------------------------------------------------------------------------------------------------------
-
-// TODO: 以下 別マップのクラスを持ってくる机上サンプル
-/*
-	マップ1には、class1A, class1B, class1Cの3クラスがあり、
-	マップ2には、class2A, class2B, class2Cの3クラスがある
-	マップ1, マップ2, … の各々のクラス定義は、「すべて」登録しておいて、それぞれはラムダ式のスコープに含めておく
-
-	class1Cのみを公開クラスとしておいて、class2Cから呼び出すよう設定しておく
-	これは、マップ2のラムダ式内で、varとしてマップ1のclass1Cを宣言し、それを使えるようにすることで実現する
-	それぞれのクラス名は、先頭に例えば「global_」などを自動付与するなどして、実装者が使わないようなキーワードにわざとしておく（実はすべてグローバル宣言されている）
-	実装者は通常「global_class1C」として呼び出すのではなく、もとのクラス名のとおり、「class1C」として呼び出すはずであるから、
-	それのvarで再宣言してやることで実現する仕組みである
-
-	あとは、別マップの読み込みが簡単に出来るかどうかが問題である
-*/
-
-// マップ1のクラス
-(() => {
-
-	global_class1A = function() {
-		console.log("class1A");
-	};
-	global_class1B = function() {
-		console.log("class1B");
-	};
-	global_class1C = function() {
-		console.log("class1C");
-	};
-
-})();
-
-// マップ2のクラス
-(() => {
-
-	// マップ1で
-	var class1C = global_class1C;
-
-	global_class2A = function() {
-		console.log("class2A");
-	};
-	global_class2B = function() {
-		console.log("class2B");
-	};
-	global_class2C = function() {
-		console.log("class2C");
-		var tmp = new class1C();
-	};
-
-})();
-
-var a = new global_class2C();
-//var b = new class1C();
-
-
-
-
-
-
-
-
-
